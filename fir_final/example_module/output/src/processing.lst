@@ -1,0 +1,409 @@
+1     	 0000				_PROCESSING_ASM
+2     						
+3     							.if defined(_PROCESSING_ASM)
+4     							
+5     						#consts
+6     	 0010				_BLOCK_SIZE .equ 16
+7     	 0006				_MAX_NUM_CHANNEL .equ 6
+8     	 001F				_n_coeff .equ 31
+9     						
+10    						# input chans
+11    	 0000				_LEFT_CH .equ 0
+12    	 0001				_RIGHT_CH .equ 1
+13    						
+14    						# out chans
+15    	 0000				_LS_CH .equ 0
+16    	 0001				_L_CH .equ 1
+17    	 0002				_C_CH .equ 2
+18    	 0003				_R_CH .equ 3
+19    	 0004				_RS_CH .equ 4
+20    	 0005				_LFE_CH .equ 5
+21    						
+22    						# init buffs
+23    							.xdata_ovly
+23     >> start of macro: .xdata_ovly
+1+    									seg_single , "X_OVLY", X
+1+     >> start of macro: seg_single
+1+    						  .if ( "" != "" ) & defined( ___SegStart_X_ )
+2+    						    segment
+3+    						  .else
+4+    						    segment "X_OVLY"
+5+    							.if "" != ""
+6+    						___SegStart_X_
+7+    							.endif
+8+    						  .endif
+9+    							#RememberSegmentType
+10+    >> end of macro: seg_single
+2+     >> end of macro: .xdata_ovly
+24    	 0000				_historyL .bss (31)
+25    	 001F				_historyR .bss (31)
+26    	 003E				_pStateL .bss (1)
+27    	 003F				_pStateR .bss(1)
+28    	 0040				_out .bss (6)
+29    	 0046				_gain .bss (1)
+30    	 0047				_mode .bss (1)
+31    	 0048				_coeffs .bsc (31), -0.00930491020808503140
+	 0048	 FECF18C1	 
+	 0049	 FECF18C1	 
+	 004A	 FECF18C1	 
+	 004B	 FECF18C1	 
+	 004C	 FECF18C1	 
+	 004D	 FECF18C1	 
+	 004E	 FECF18C1	 
+	 004F	 FECF18C1	 
+	 0050	 FECF18C1	 
+	 0051	 FECF18C1	 
+	 0052	 FECF18C1	 
+	 0053	 FECF18C1	 
+	 0054	 FECF18C1	 
+	 0055	 FECF18C1	 
+	 0056	 FECF18C1	 
+	 0057	 FECF18C1	 
+	 0058	 FECF18C1	 
+	 0059	 FECF18C1	 
+	 005A	 FECF18C1	 
+	 005B	 FECF18C1	 
+	 005C	 FECF18C1	 
+	 005D	 FECF18C1	 
+	 005E	 FECF18C1	 
+	 005F	 FECF18C1	 
+	 0060	 FECF18C1	 
+	 0061	 FECF18C1	 
+	 0062	 FECF18C1	 
+	 0063	 FECF18C1	 
+	 0064	 FECF18C1	 
+	 0065	 FECF18C1	 
+	 0066	 FECF18C1	 
+32    	 0067				_coeffs1 .bsc (1), -0.00944040203390978520
+	 0067	 FECAA82B	 
+33    	 0068				_coeffs2 .bsc (1), -0.00957002117828420830
+	 0068	 FEC668D8	 
+34    	 0069				_coeffs3 .bsc (1), -0.00969329473373671360
+	 0069	 FEC25EC0	 
+35    	 006A				_coeffs4 .bsc (1), -0.00980973811652527740
+	 006A	 FEBE8DF4	 
+36    	 006B				_coeffs5 .bsc (1), -0.00991885539807379170
+	 006B	 FEBAFA9C	 
+37    	 006C				_coeffs6 .bsc (1), -0.01002013967501371900
+	 006C	 FEB7A8FA	 
+38    	 006D				_coeffs7 .bsc (1), -0.01011307347900127600
+	 006D	 FEB49D64	 
+39    	 006E				_coeffs8 .bsc (1), -0.01019712922744179600
+	 006E	 FEB1DC48	 
+40    	 006F				_coeffs9 .bsc (1), -0.01027176971623380500
+	 006F	 FEAF6A26	 
+41    	 0070				_coeffs10 .bsc (1), -0.01033644865559729500
+	 0070	 FEAD4B96	 
+42    	 0071				_coeffs11 .bsc (1), -0.01039061125002338000
+	 0071	 FEAB853C	 
+43    	 0072				_coeffs12 .bsc (1), -0.01043369482332797600
+	 0072	 FEAA1BD3	 
+44    	 0073				_coeffs13 .bsc (1), -0.01046512948974967800
+	 0073	 FEA91422	 
+45    	 0074				_coeffs14 .bsc (1), -0.01048433887197771500
+	 0074	 FEA872FE	 
+46    	 0075				_coeffs15 .bsc (1), 0.98027343068895101000
+	 0075	 7D79998B	 
+47    	 0076				_coeffs16 .bsc (1), -0.01048433887197771500
+	 0076	 FEA872FE	 
+48    	 0077				_coeffs17 .bsc (1), -0.01046512948974967800
+	 0077	 FEA91422	 
+49    	 0078				_coeffs18 .bsc (1), -0.01043369482332797600
+	 0078	 FEAA1BD3	 
+50    	 0079				_coeffs19 .bsc (1), -0.01039061125002338000
+	 0079	 FEAB853C	 
+51    	 007A				_coeffs20 .bsc (1), -0.01033644865559729500
+	 007A	 FEAD4B96	 
+52    	 007B				_coeffs21 .bsc (1), -0.01027176971623380500
+	 007B	 FEAF6A26	 
+53    	 007C				_coeffs22 .bsc (1), -0.01019712922744179600
+	 007C	 FEB1DC48	 
+54    	 007D				_coeffs23 .bsc (1), -0.01011307347900127600
+	 007D	 FEB49D64	 
+55    	 007E				_coeffs24 .bsc (1), -0.01002013967501371900
+	 007E	 FEB7A8FA	 
+56    	 007F				_coeffs25 .bsc (1), -0.00991885539807379170
+	 007F	 FEBAFA9C	 
+57    	 0080				_coeffs26 .bsc (1), -0.00980973811652527740
+	 0080	 FEBE8DF4	 
+58    	 0081				_coeffs27 .bsc (1), -0.00969329473373671360
+	 0081	 FEC25EC0	 
+59    	 0082				_coeffs28 .bsc (1), -0.00957002117828420830
+	 0082	 FEC668D8	 
+60    	 0083				_coeffs29 .bsc (1), -0.00944040203390978520
+	 0083	 FECAA82B	 
+61    	 0084				_coeffs30 .bsc (1), -0.00930491020808503140
+	 0084	 FECF18C1	 
+62    						
+63    							#.public _fir_circular
+64    							
+65    	 0000					.public _processing
+66    	 0000					.public _init
+67    							#.extern _gain
+68    							#.extern _mode
+69    							#.extern _coeffs
+70    							#.extern _history
+71    							#.extern _pState
+72    							#.extern _out
+73    							
+74    							.code_ovly
+74     >> start of macro: .code_ovly
+1+    									seg_single , "CODE_OVLY", CODE
+1+     >> start of macro: seg_single
+1+    						  .if ( "" != "" ) & defined( ___SegStart_CODE_ )
+2+    						    segment
+3+    						  .else
+4+    						    segment "CODE_OVLY"
+5+    							.if "" != ""
+6+    						___SegStart_CODE_
+7+    							.endif
+8+    						  .endif
+9+    							#RememberSegmentType
+10+    >> end of macro: seg_single
+2+     >> end of macro: .code_ovly
+75    							
+76    							
+77    							#a0 mode
+78    							#b0 gain
+79    	 0000				_init:
+80    	 0000	 88440047		xmem[_mode] = a0
+81    	 0001	 8C440046		xmem[_gain] = b0
+82    							
+83    	 0002	 81880000		ret	
+84    						
+85    						
+86    							#a0 - input
+87    							#i0 - **p_state
+88    							#i1 - *state_start
+89    							#i4 - *state_end
+90    	 0003				_fir_circular:
+91    																			#*state = *p_state;
+92    	 0003	 B9140000		i5 = xmem[i0]									#*state
+93    																			#ptrCoeffs = (coeffs + FILTER_LEN - 1);
+94    	 0004	 B24A0048		i2 = (_coeffs)
+95    	 0005	 894A001F		uhalfword(a1) = (_n_coeff)
+96    	 0006	 B209000C		AnyReg(b0, i2)									#b0 = _coeffs
+97    	 0007	 8D4A0001		uhalfword(b1) = (0x0001)
+98    	 0008	 0000442C		b0 = b0 + a1									#_coeffs + _FILTER_LEN
+99    	 0009	 00007FFF		nop
+100   																			#ptrCoeffs = (_coeffs + _FILTER_LEN) - 1
+101   	 000A	 0000444C		b0 = b0 - b1										
+102   							
+103   	 000B	 8C090033		AnyReg(i3, b0)									#i3 = *ptrCoeffs
+104   																			#*state = input;
+105   	 000C	 88540005		xmem[i5] = a0
+106   	 000D	 020D7FFF		i5 += 1												#if (++state >= state_end)	
+107   	 000E	 B909000C		AnyReg(b0, i5)									#b0 -> ++state 
+108   	 000F	 B8090008		AnyReg(a0, i4)									#a0 -> *state_end
+109   	 0010	 00004F24		b0 - a0
+110   						
+111   	 0011	 86880013		if(b < 0) jmp>over1								#state = state_start;
+112   	 0012	 B1090039			i5 = i1
+113   	 0013				%over1:
+114   	 0013	 00004DC4		b0 = 0
+115   	 0014	 81F0001F		do(_n_coeff), >loop
+116   	 0015	 80140003			x0 = xmem[i3]								#ptrCoeffs				
+117   	 0016	 84140015			y0 = xmem[i5]; i5 += 1						#state 
+118   	 0017	 00002405			b1 = x0 * y0								#*ptrCoeffs * *state;
+119   	 0018	 00007FFF			nop											#ret_val = ret_val + (*ptrCoeffs * *state)
+120   	 0019	 0000440C			b0 = b0 + b1								#ret_val														
+121   																			#if (++state >= state_end)
+122   	 001A	 B909000D			AnyReg(b1, i5)								#b1 -> ++state 	
+123   	 001B	 B8090009			AnyReg(a1, i4)								#a0 -> *state_end
+124   	 001C	 00004F2D			b1 - a1
+125   	 001D	 8688001F			if(b < 0) jmp>over2
+126   																			#state = state_start;
+127   	 001E	 B1090039				i5 = i1
+128   	 001F				%over2:		
+129   	 001F	 02137FFF	%loop: i3 -= 1	
+130   	 0020	 B9540000		xmem[i0] = i5									#*p_state = state;
+131   	 0021	 4C487FFF		a0 = b0											#a0 = ret_val
+132   						
+133   	 0022	 81880000		ret	
+134   						    
+135   						     
+136   							# i0 = inBuffer
+137   							# i1 = outBuffer
+138   	 0023				_processing:
+139   	 0023	 8100006D		do(_BLOCK_SIZE), >loop
+140   							
+141   								# R channel
+142   	 0024	 84050010			i4 = i0 + (_RIGHT_CH * _BLOCK_SIZE) 	# R in
+143   	 0025	 84940004			y0 = ymem[i4]
+144   	 0026	 80040046			x0 = xmem[_gain] 						# Gain
+145   	 0027	 B84A0043			i4 = (_out + _R_CH)
+146   	 0028	 00002400			a0 = x0 * y0							# R
+147   	 0029	 88540004			xmem[i4] = a0							# outR
+148   									
+149   								# L channel
+150   	 002A	 84940000			y0 = ymem[i0]							# L in
+151   	 002B	 B84A0041			i4 = (_out + _L_CH)
+152   	 002C	 00002404			b0 = x0 * y0							# L
+153   	 002D	 8C540004			xmem[i4] = b0							# outL
+154   								
+155   								# LS channel
+156   	 002E	 B84A0040			i4 = (_out + _LS_CH)
+157   	 002F	 00007FFF			nop
+158   	 0030	 8C540004			xmem[i4] = b0							# outLS
+159   								
+160   								# RS channel
+161   	 0031	 B84A0044			i4 = (_out + _RS_CH)
+162   	 0032	 00007FFF			nop
+163   	 0033	 88540004			xmem[i4] = a0							# outRS
+164   								
+165   								# C channel
+166   	 0034	 B84A0042			i4 = (_out + _C_CH)
+167   	 0035	 00004421			a1 = a0 + b0
+168   	 0036	 89540004			xmem[i4] = a1		
+169   								
+170   								# output
+171   								
+172   								# LS channel filter + out
+173   	 0037	 80040040			x0 = xmem[_out + _LS_CH]
+174   	 0038	 84050000			i4 = i0 + (_LS_CH * _BLOCK_SIZE)
+175   	 0039	 40487FFF			a0 = x0
+176   								
+177   								# pushin to stack
+178   	 003A	 B0D40017			ymem[i7] = i0; i7+=1				// Pushing to stack
+179   	 003B	 B04A003E			i0 = (_pStateL)
+180   	 003C	 B1D40017			ymem[i7] = i1; i7+=1
+181   	 003D	 B14A0000			i1 = (_historyL)
+182   	 003E	 B8D40017			ymem[i7] = i4; i7+=1
+183   	 003F	 B84A001F			i4 = (_historyL + _n_coeff)
+184   	 0040	 80880003			call _fir_circular					// Filtering
+185   	 0041	 02177FFF			i7-=1
+186   	 0042	 B8940027			i4 = ymem[i7];i7-=1 				// Pop from stack
+187   	 0043	 B1940027			i1 = ymem[i7];i7-=1 
+188   	 0044	 B0940007			i0 = ymem[i7]
+189   	 0045	 88D40004			ymem[i4] = a0	
+190   								
+191   								
+192   								# LS puttin in LFE
+193   	 0046	 B84A0045			i4 = (_out + _LFE_CH)
+194   	 0047	 00007FFF			nop
+195   	 0048	 88540004			xmem[i4] = a0
+196   								
+197   								# L channel
+198   	 0049	 80040041			x0 = xmem[_out + _L_CH]
+199   	 004A	 84050010			i4 = i0 + (_L_CH * _BLOCK_SIZE)
+200   	 004B	 40487FFF			a0 = x0
+201   	 004C	 88D40004			ymem[i4] = a0
+202   								
+203   								# C channel
+204   	 004D	 80040042			x0 = xmem[_out + _C_CH]
+205   	 004E	 84050020			i4 = i0 + (_C_CH * _BLOCK_SIZE)
+206   	 004F	 40487FFF			a0 = x0
+207   	 0050	 88D40004			ymem[i4] = a0
+208   								
+209   								# R channel
+210   	 0051	 80040043			x0 = xmem[_out + _R_CH]
+211   	 0052	 84050030			i4 = i0 + (_R_CH * _BLOCK_SIZE)
+212   	 0053	 40487FFF			a0 = x0
+213   	 0054	 88D40004			ymem[i4] = a0
+214   								
+215   								# RS channel
+216   	 0055	 80040044			x0 = xmem[_out + _RS_CH]
+217   	 0056	 84050040			i4 = i0 + (_RS_CH * _BLOCK_SIZE)
+218   	 0057	 40487FFF			a0 = x0
+219   								# pushin to stack
+220   	 0058	 B0D40017			ymem[i7] = i0; i7+=1				// Pushing to stack
+221   	 0059	 B04A003F			i0 = (_pStateR)
+222   	 005A	 B1D40017			ymem[i7] = i1; i7+=1
+223   	 005B	 B14A003E			i1 = (_historyR + _n_coeff)
+224   	 005C	 B8D40017			ymem[i7] = i4; i7+=1
+225   	 005D	 B84A003E			i4 = (_historyR + _n_coeff)
+226   	 005E	 80880003			call _fir_circular					// Filtering
+227   	 005F	 02177FFF			i7-=1
+228   	 0060	 B8940027			i4 = ymem[i7];i7-=1 				// Pop from stack
+229   	 0061	 B1940027			i1 = ymem[i7];i7-=1 
+230   	 0062	 B0940007			i0 = ymem[i7]
+231   	 0063	 88D40004			ymem[i4] = a0	
+232   						
+233   								
+234   								# LFE channel
+235   								# puttin in 
+236   	 0064	 B84A0045			i4 = (_out + _LFE_CH)
+237   	 0065	 00007FFF			nop
+238   	 0066	 8C140004			b0 = xmem[i4]
+239   	 0067	 00004424			b0 = b0 + a0
+240   	 0068	 8C540004			xmem[i4] = b0
+241   	 0069	 84050050			i4 = i0 + (_LFE_CH * _BLOCK_SIZE)
+242   	 006A	 8CD40004			ymem[i4] = b0
+243   	 006B	 02087FFF			i0+=1
+244   	 006C	 02097FFF			i1+=1
+245   								
+246   						
+247   	 006D	 00007FFF	%loop:  nop
+248   	 006E	 81880000		ret
+249   								
+250   							.endif	
+				 SYMBOL TABLE 
+
+    Name                                                                                    Type                  Value 
+
+_BLOCK_SIZE                                                                     					 Number				          16 (10H)
+_COMMON_INC_PATH_                                                               					 Define                 "C:/CirrusDSP/crystal32/common/inc/"
+_C_CH                                                                           					 Number				          2 (2H)
+_DSP_                                                                           			  Unused Variable		        0 (0H)
+_LEFT_CH                                                                        			  Unused Number				     0 (0H)
+_LFE_CH                                                                         					 Number				          5 (5H)
+_LOCAL_INC_PATH_                                                                					 Define                 "inc/"
+_LOCAL_SRC_PATH_                                                                					 Define                 "src/"
+_LS_CH                                                                          					 Number				         0 (0H)
+_L_CH                                                                           					 Number				          1 (1H)
+_MAX_NUM_CHANNEL                                                                			  Unused Number				      6 (6H)
+_PROCESSING_ASM                                                                 			  Unused Relocatable        __INIT:0000H
+_RIGHT_CH                                                                       					 Number				          1 (1H)
+_ROUTER_INC_PATH_                                                               					 Define                 "rom_inc/"
+_RS_CH                                                                          					 Number				          4 (4H)
+_R_CH                                                                           					 Number				          3 (3H)
+__CASM_VER__                                                                    			  Unused Variable		        0 (701H)
+_coeffs                                                                         			         Relocatable         processing_GEN_0000:0048H
+_coeffs1                                                                        			  Unused Relocatable        processing_GEN_0000:0067H
+_coeffs10                                                                       			  Unused Relocatable        processing_GEN_0000:0070H
+_coeffs11                                                                       			  Unused Relocatable        processing_GEN_0000:0071H
+_coeffs12                                                                       			  Unused Relocatable        processing_GEN_0000:0072H
+_coeffs13                                                                       			  Unused Relocatable        processing_GEN_0000:0073H
+_coeffs14                                                                       			  Unused Relocatable        processing_GEN_0000:0074H
+_coeffs15                                                                       			  Unused Relocatable        processing_GEN_0000:0075H
+_coeffs16                                                                       			  Unused Relocatable        processing_GEN_0000:0076H
+_coeffs17                                                                       			  Unused Relocatable        processing_GEN_0000:0077H
+_coeffs18                                                                       			  Unused Relocatable        processing_GEN_0000:0078H
+_coeffs19                                                                       			  Unused Relocatable        processing_GEN_0000:0079H
+_coeffs2                                                                        			  Unused Relocatable        processing_GEN_0000:0068H
+_coeffs20                                                                       			  Unused Relocatable        processing_GEN_0000:007AH
+_coeffs21                                                                       			  Unused Relocatable        processing_GEN_0000:007BH
+_coeffs22                                                                       			  Unused Relocatable        processing_GEN_0000:007CH
+_coeffs23                                                                       			  Unused Relocatable        processing_GEN_0000:007DH
+_coeffs24                                                                       			  Unused Relocatable        processing_GEN_0000:007EH
+_coeffs25                                                                       			  Unused Relocatable        processing_GEN_0000:007FH
+_coeffs26                                                                       			  Unused Relocatable        processing_GEN_0000:0080H
+_coeffs27                                                                       			  Unused Relocatable        processing_GEN_0000:0081H
+_coeffs28                                                                       			  Unused Relocatable        processing_GEN_0000:0082H
+_coeffs29                                                                       			  Unused Relocatable        processing_GEN_0000:0083H
+_coeffs3                                                                        			  Unused Relocatable        processing_GEN_0000:0069H
+_coeffs30                                                                       			  Unused Relocatable        processing_GEN_0000:0084H
+_coeffs4                                                                        			  Unused Relocatable        processing_GEN_0000:006AH
+_coeffs5                                                                        			  Unused Relocatable        processing_GEN_0000:006BH
+_coeffs6                                                                        			  Unused Relocatable        processing_GEN_0000:006CH
+_coeffs7                                                                        			  Unused Relocatable        processing_GEN_0000:006DH
+_coeffs8                                                                        			  Unused Relocatable        processing_GEN_0000:006EH
+_coeffs9                                                                        			  Unused Relocatable        processing_GEN_0000:006FH
+_fir_circular                                                                   			         Relocatable         processing_GEN_0001:0003H
+_gain                                                                           			         Relocatable         processing_GEN_0000:0046H
+_historyL                                                                       			         Relocatable         processing_GEN_0000:0000H
+_historyR                                                                       			         Relocatable         processing_GEN_0000:001FH
+_init                                                                           			  Public Relocatable       processing_GEN_0001:0000H
+_mode                                                                           			         Relocatable         processing_GEN_0000:0047H
+_n_coeff                                                                        					 Number				          31 (1FH)
+_out                                                                            			         Relocatable         processing_GEN_0000:0040H
+_pStateL                                                                        			         Relocatable         processing_GEN_0000:003EH
+_pStateR                                                                        			         Relocatable         processing_GEN_0000:003FH
+_processing                                                                     			  Public Relocatable       processing_GEN_0001:0023H
+
+	       SEGMENTS:
+
+Size			  Name										 Class
+0000H	 __INIT                                  			 CODE                                    
+0085H	 processing_GEN_0000                     			 X_OVLY                                  
+006FH	 processing_GEN_0001                     			 CODE_OVLY                               

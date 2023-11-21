@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings built="true" last_build_time="1700548710851">
+	<dependencies>
+		<source_file last_build_time="1700547576129" path="src/main.c">
+			<dependency>../inc/common.h</dependency>
+			<dependency>../../../../include/stdlib.h</dependency>
+			<dependency>../../../../include/string.h</dependency>
+			<dependency>../../../../include/math.h</dependency>
+			<dependency>../../../../include/stdfix.h</dependency>
+			<dependency>../../../../include/scaling_coeff.h</dependency>
+			<dependency>../../../../include/dsplib/wavefile.h</dependency>
+			<dependency>../../../../include/dsplib/timers.h</dependency>
+			<dependency>../../../../include/stdio.h</dependency>
+		</source_file>
+		<source_file last_build_time="1700548709169" path="src/processing.c">
+			<dependency>../inc/common.h</dependency>
+			<dependency>../../../../include/stdlib.h</dependency>
+			<dependency>../../../../include/string.h</dependency>
+			<dependency>../../../../include/math.h</dependency>
+			<dependency>../../../../include/stdfix.h</dependency>
+			<dependency>../../../../include/scaling_coeff.h</dependency>
+		</source_file>
+		<source_file last_build_time="1700548709169" path="src/processing.a"/>
+	</dependencies>
+</settings>
