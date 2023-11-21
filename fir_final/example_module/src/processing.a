@@ -1,0 +1,250 @@
+_PROCESSING_ASM
+
+	.if defined(_PROCESSING_ASM)
+	
+#consts
+_BLOCK_SIZE .equ 16
+_MAX_NUM_CHANNEL .equ 6
+_n_coeff .equ 31
+
+# input chans
+_LEFT_CH .equ 0
+_RIGHT_CH .equ 1
+
+# out chans
+_LS_CH .equ 0
+_L_CH .equ 1
+_C_CH .equ 2
+_R_CH .equ 3
+_RS_CH .equ 4
+_LFE_CH .equ 5
+
+# init buffs
+	.xdata_ovly
+_historyL .bss (31)
+_historyR .bss (31)
+_pStateL .bss (1)
+_pStateR .bss(1)
+_out .bss (6)
+_gain .bss (1)
+_mode .bss (1)
+_coeffs .bsc (31), -0.00930491020808503140
+_coeffs1 .bsc (1), -0.00944040203390978520
+_coeffs2 .bsc (1), -0.00957002117828420830
+_coeffs3 .bsc (1), -0.00969329473373671360
+_coeffs4 .bsc (1), -0.00980973811652527740
+_coeffs5 .bsc (1), -0.00991885539807379170
+_coeffs6 .bsc (1), -0.01002013967501371900
+_coeffs7 .bsc (1), -0.01011307347900127600
+_coeffs8 .bsc (1), -0.01019712922744179600
+_coeffs9 .bsc (1), -0.01027176971623380500
+_coeffs10 .bsc (1), -0.01033644865559729500
+_coeffs11 .bsc (1), -0.01039061125002338000
+_coeffs12 .bsc (1), -0.01043369482332797600
+_coeffs13 .bsc (1), -0.01046512948974967800
+_coeffs14 .bsc (1), -0.01048433887197771500
+_coeffs15 .bsc (1), 0.98027343068895101000
+_coeffs16 .bsc (1), -0.01048433887197771500
+_coeffs17 .bsc (1), -0.01046512948974967800
+_coeffs18 .bsc (1), -0.01043369482332797600
+_coeffs19 .bsc (1), -0.01039061125002338000
+_coeffs20 .bsc (1), -0.01033644865559729500
+_coeffs21 .bsc (1), -0.01027176971623380500
+_coeffs22 .bsc (1), -0.01019712922744179600
+_coeffs23 .bsc (1), -0.01011307347900127600
+_coeffs24 .bsc (1), -0.01002013967501371900
+_coeffs25 .bsc (1), -0.00991885539807379170
+_coeffs26 .bsc (1), -0.00980973811652527740
+_coeffs27 .bsc (1), -0.00969329473373671360
+_coeffs28 .bsc (1), -0.00957002117828420830
+_coeffs29 .bsc (1), -0.00944040203390978520
+_coeffs30 .bsc (1), -0.00930491020808503140
+
+	#.public _fir_circular
+	
+	.public _processing
+	.public _init
+	#.extern _gain
+	#.extern _mode
+	#.extern _coeffs
+	#.extern _history
+	#.extern _pState
+	#.extern _out
+	
+	.code_ovly
+	
+	
+	#a0 mode
+	#b0 gain
+_init:
+	xmem[_mode] = a0
+	xmem[_gain] = b0
+	
+	ret	
+
+
+	#a0 - input
+	#i0 - **p_state
+	#i1 - *state_start
+	#i4 - *state_end
+_fir_circular:
+													#*state = *p_state;
+	i5 = xmem[i0]									#*state
+													#ptrCoeffs = (coeffs + FILTER_LEN - 1);
+	i2 = (_coeffs)
+	uhalfword(a1) = (_n_coeff)
+	AnyReg(b0, i2)									#b0 = _coeffs
+	uhalfword(b1) = (0x0001)
+	b0 = b0 + a1									#_coeffs + _FILTER_LEN
+	nop
+													#ptrCoeffs = (_coeffs + _FILTER_LEN) - 1
+	b0 = b0 - b1										
+	
+	AnyReg(i3, b0)									#i3 = *ptrCoeffs
+													#*state = input;
+	xmem[i5] = a0
+	i5 += 1												#if (++state >= state_end)	
+	AnyReg(b0, i5)									#b0 -> ++state 
+	AnyReg(a0, i4)									#a0 -> *state_end
+	b0 - a0
+
+	if(b < 0) jmp>over1								#state = state_start;
+		i5 = i1
+%over1:
+	b0 = 0
+	do(_n_coeff), >loop
+		x0 = xmem[i3]								#ptrCoeffs				
+		y0 = xmem[i5]; i5 += 1						#state 
+		b1 = x0 * y0								#*ptrCoeffs * *state;
+		nop											#ret_val = ret_val + (*ptrCoeffs * *state)
+		b0 = b0 + b1								#ret_val														
+													#if (++state >= state_end)
+		AnyReg(b1, i5)								#b1 -> ++state 	
+		AnyReg(a1, i4)								#a0 -> *state_end
+		b1 - a1
+		if(b < 0) jmp>over2
+													#state = state_start;
+			i5 = i1
+%over2:		
+%loop: i3 -= 1	
+	xmem[i0] = i5									#*p_state = state;
+	a0 = b0											#a0 = ret_val
+
+	ret	
+    
+     
+	# i0 = inBuffer
+	# i1 = outBuffer
+_processing:
+	do(_BLOCK_SIZE), >loop
+	
+		# R channel
+		i4 = i0 + (_RIGHT_CH * _BLOCK_SIZE) 	# R in
+		y0 = ymem[i4]
+		x0 = xmem[_gain] 						# Gain
+		i4 = (_out + _R_CH)
+		a0 = x0 * y0							# R
+		xmem[i4] = a0							# outR
+			
+		# L channel
+		y0 = ymem[i0]							# L in
+		i4 = (_out + _L_CH)
+		b0 = x0 * y0							# L
+		xmem[i4] = b0							# outL
+		
+		# LS channel
+		i4 = (_out + _LS_CH)
+		nop
+		xmem[i4] = b0							# outLS
+		
+		# RS channel
+		i4 = (_out + _RS_CH)
+		nop
+		xmem[i4] = a0							# outRS
+		
+		# C channel
+		i4 = (_out + _C_CH)
+		a1 = a0 + b0
+		xmem[i4] = a1		
+		
+		# output
+		
+		# LS channel filter + out
+		x0 = xmem[_out + _LS_CH]
+		i4 = i0 + (_LS_CH * _BLOCK_SIZE)
+		a0 = x0
+		
+		# pushin to stack
+		ymem[i7] = i0; i7+=1				// Pushing to stack
+		i0 = (_pStateL)
+		ymem[i7] = i1; i7+=1
+		i1 = (_historyL)
+		ymem[i7] = i4; i7+=1
+		i4 = (_historyL + _n_coeff)
+		call _fir_circular					// Filtering
+		i7-=1
+		i4 = ymem[i7];i7-=1 				// Pop from stack
+		i1 = ymem[i7];i7-=1 
+		i0 = ymem[i7]
+		ymem[i4] = a0	
+		
+		
+		# LS puttin in LFE
+		i4 = (_out + _LFE_CH)
+		nop
+		xmem[i4] = a0
+		
+		# L channel
+		x0 = xmem[_out + _L_CH]
+		i4 = i0 + (_L_CH * _BLOCK_SIZE)
+		a0 = x0
+		ymem[i4] = a0
+		
+		# C channel
+		x0 = xmem[_out + _C_CH]
+		i4 = i0 + (_C_CH * _BLOCK_SIZE)
+		a0 = x0
+		ymem[i4] = a0
+		
+		# R channel
+		x0 = xmem[_out + _R_CH]
+		i4 = i0 + (_R_CH * _BLOCK_SIZE)
+		a0 = x0
+		ymem[i4] = a0
+		
+		# RS channel
+		x0 = xmem[_out + _RS_CH]
+		i4 = i0 + (_RS_CH * _BLOCK_SIZE)
+		a0 = x0
+		# pushin to stack
+		ymem[i7] = i0; i7+=1				// Pushing to stack
+		i0 = (_pStateR)
+		ymem[i7] = i1; i7+=1
+		i1 = (_historyR + _n_coeff)
+		ymem[i7] = i4; i7+=1
+		i4 = (_historyR + _n_coeff)
+		call _fir_circular					// Filtering
+		i7-=1
+		i4 = ymem[i7];i7-=1 				// Pop from stack
+		i1 = ymem[i7];i7-=1 
+		i0 = ymem[i7]
+		ymem[i4] = a0	
+
+		
+		# LFE channel
+		# puttin in 
+		i4 = (_out + _LFE_CH)
+		nop
+		b0 = xmem[i4]
+		b0 = b0 + a0
+		xmem[i4] = b0
+		i4 = i0 + (_LFE_CH * _BLOCK_SIZE)
+		ymem[i4] = b0
+		i0+=1
+		i1+=1
+		
+
+%loop:  nop
+	ret
+		
+	.endif	

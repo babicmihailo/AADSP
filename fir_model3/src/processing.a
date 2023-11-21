@@ -1,0 +1,229 @@
+_PROCESSING_ASM
+
+	.if defined(_PROCESSING_ASM)
+	
+#consts
+_BLOCK_SIZE .equ 16
+_MAX_NUM_CHANNEL .equ 6
+_n_coeff .equ 31
+
+# input chans
+_LEFT_CH .equ 0
+_RIGHT_CH .equ 1
+
+# out chans
+_LS_CH .equ 0
+_L_CH .equ 1
+_C_CH .equ 2
+_R_CH .equ 3
+_RS_CH .equ 4
+_LFE_CH .equ 5
+
+	.xdata_ovly
+	
+_LIMITER .dw (0x7fffffff)
+	
+	.public _fir_circular
+	.public _processing
+	.extern _history
+	.extern _pStateL
+	.extern _pStateR
+	.extern _coeffs
+	.extern _out
+	.extern _gain
+	
+
+	
+	
+	.code_ovly	
+
+
+	#a0 - input
+	#i0 - **p_state
+	#i1 - *state_start
+	#i4 - *state_end
+_fir_circular:
+													#*state = *p_state;
+	i5 = xmem[i0]									#*state
+													#ptrCoeffs = (coeffs + FILTER_LEN - 1);
+	i2 = (_coeffs)
+	uhalfword(a1) = (_n_coeff)
+	AnyReg(b0, i2)									#b0 = _coeffs
+	
+	b0 = b0 + a1									#_coeffs + _FILTER_LEN
+	uhalfword(b1) = (0x0001)
+													#ptrCoeffs = (_coeffs + _FILTER_LEN) - 1
+	b0 = b0 - b1										
+	
+	AnyReg(i3, b0)									#i3 = *ptrCoeffs
+													#*state = input;
+	xmem[i5] = a0; i5 += 1
+													#if (++state >= state_end)	
+	AnyReg(b0, i5)									#b0 -> ++state 
+	AnyReg(a0, i4)									#a0 -> *state_end
+	b0 - a0
+
+	if(b < 0) jmp>over1								#state = state_start;
+		i5 = i1
+%over1:
+	b0 = 0
+	do(_n_coeff), >loop
+		x0 = xmem[i3]								#ptrCoeffs				
+		y0 = xmem[i5]; i5 += 1						#state 
+		b1 = x0 * y0								#*ptrCoeffs * *state;
+		nop											#ret_val = ret_val + (*ptrCoeffs * *state)
+		b0 = b0 + b1								#ret_val														
+													#if (++state >= state_end)
+		AnyReg(b1, i5)								#b1 -> ++state 	
+		AnyReg(a1, i4)								#a0 -> *state_end
+		b1 - a1
+		if(b < 0) jmp>over2
+													#state = state_start;
+			i5 = i1
+%over2:		
+%loop: i3 -= 1	
+	xmem[i0] = i5									#*p_state = state;
+	a0 = b0											#a0 = ret_val
+
+	ret	
+    
+     
+	# i0 = inBuffer
+	# i1 = outBuffer
+_processing:
+	do(_BLOCK_SIZE), >loop
+	
+		# R channel
+		i4 = i0 + (_RIGHT_CH * _BLOCK_SIZE) 	# R in
+		y0 = ymem[i4]
+		x0 = xmem[_gain] 						# Gain
+		i4 = (_out + _R_CH)
+		a0 = x0 * y0							# R
+		xmem[i4] = a0							# outR
+			
+		# L channel
+		y0 = ymem[i0]							# L in
+		i4 = (_out + _L_CH)
+		b0 = x0 * y0							# L
+		xmem[i4] = b0							# outL
+		
+		# LS channel
+		i4 = (_out + _LS_CH)
+		nop
+		xmem[i4] = b0							# outLS
+		
+		# RS channel
+		i4 = (_out + _RS_CH)
+		nop
+		xmem[i4] = a0							# outRS
+		
+		# C channel
+		i4 = (_out + _C_CH)
+		a1 = a0 + b0
+		xmem[i4] = a1		
+		
+		# output
+		
+		# LS channel filter + out
+		x0 = xmem[_out + _LS_CH]
+		i4 = i0 + (_LS_CH * _BLOCK_SIZE)
+		a0 = x0
+		
+		# pushin to stack
+		ymem[i7] = i0; i7+=1				# Push to stack
+		i0 = (_pStateL)
+		ymem[i7] = i1; i7+=1
+		i1 = (_history)
+		ymem[i7] = i4; i7+=1
+		i4 = (_n_coeff + _history)
+		call _fir_circular					
+		i7-=1
+		i4 = ymem[i7];i7-=1 				# Pop from stack
+		i1 = ymem[i7];i7-=1 
+		i0 = ymem[i7]
+		ymem[i4] = a0	
+		
+		
+		# LS puttin in LFE
+		i4 = (_out + _LFE_CH)
+		nop
+		xmem[i4] = a0
+		
+		# L channel
+		x0 = xmem[_out + _L_CH]
+		i4 = i0 + (_L_CH * _BLOCK_SIZE)
+		a0 = x0
+		ymem[i4] = a0
+		
+		# C channel
+		x0 = xmem[_out + _C_CH]
+		i4 = i0 + (_C_CH * _BLOCK_SIZE)
+		a0 = x0
+		
+		b0 = xmem[_LIMITER]
+		a0 - b0
+		if(a < 0) jmp>checkFmin
+			a0 = b0
+%checkFmin:
+		b0 = -b0
+		a0 - b0
+		if(a >= 0) jmp>saturated
+			a0 = b0
+%saturated
+		
+		ymem[i4] = a0
+		
+		# R channel
+		x0 = xmem[_out + _R_CH]
+		i4 = i0 + (_R_CH * _BLOCK_SIZE)
+		a0 = x0
+		ymem[i4] = a0
+		
+		# RS channel
+		x0 = xmem[_out + _RS_CH]
+		i4 = i0 + (_RS_CH * _BLOCK_SIZE)
+		a0 = x0
+		# pushin to stack
+		ymem[i7] = i0; i7+=1					# Push to stack
+		i0 = (_pStateR)
+		ymem[i7] = i1; i7+=1
+		i1 = (_history + _n_coeff)
+		ymem[i7] = i4; i7+=1
+		i4 = (_history + _n_coeff + _n_coeff)
+		call _fir_circular					
+		i7-=1
+		i4 = ymem[i7];i7-=1 					# Pop from stack
+		i1 = ymem[i7];i7-=1 
+		i0 = ymem[i7]
+		ymem[i4] = a0	
+
+		
+		# LFE channel
+		# puttin in 
+		i4 = (_out + _LFE_CH)
+		nop
+		b0 = xmem[i4]
+		b0 = b0 + a0
+		xmem[i4] = b0
+		i4 = i0 + (_LFE_CH * _BLOCK_SIZE)
+		
+		a0 = xmem[_LIMITER]
+		b0 - a0
+		if(b < 0) jmp>checkFmin
+			b0 = a0
+%checkFmin:
+		a0 = -a0
+		b0 - a0
+		if(b >= 0) jmp>saturated
+			b0 = a0
+%saturated
+		
+		ymem[i4] = b0
+		i0+=1
+		i1+=1
+		
+
+%loop:  nop
+	ret
+		
+	.endif	
